@@ -7,7 +7,7 @@ Slack Incoming Webhooks expect a JSON request with a message string correspondin
 This project contains:
 
 * `index.py` file - The file containing the lambda function
-* `.circleci` folder - A folder that contains the `config.yml` for deployment to Circle CI if you want to.
+* `.circleci` folder - A folder that contains the `config.yml` for deployment using [Circle CI](https://app.circleci.com/) if you want to.
 * `README.md` file - The file contains the lambda function setup guide
 
 ## Create Incoming webhooks for Slack
