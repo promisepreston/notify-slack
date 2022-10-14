@@ -30,7 +30,7 @@ If you haven't done so already, [create an SNS topic](https://docs.aws.amazon.co
 
 For instructions to create a Lambda function, see [Getting started with AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html). For more information, see [Using AWS Lambda with Amazon SNS](https://docs.aws.amazon.com/en_us/lambda/latest/dg/with-sns.html).
 
-Your Lambda function will contain the `lambda_function.py` file which is the code that includes logic to transform your SNS topic's notification messages for the type of Slack webhook endpoint.
+Your Lambda function will contain the `index.py` file which is the code that includes logic to transform your SNS topic's notification messages for the type of Slack webhook endpoint.
 
 ## Environment Variables
 
