@@ -1,0 +1,185 @@
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@3.1.1
+workflows:
+  # DEVELOPMENT
+  build-deploy-dev:
+    jobs:
+      - build
+      - zip-and-push-dev:
+          requires:
+            - build
+      - deploy-to-lambda-dev:
+          requires:
+            - zip-and-push-dev
+          filters:
+             branches:
+               only: development
+  # STAGING
+  build-deploy-stag:
+    jobs:
+      - build
+      - zip-and-push-stag:
+          requires:
+            - build
+      - deploy-to-lambda-stag:
+          requires:
+            - zip-and-push-stag
+          filters:
+             branches:
+               only: staging
+  # STAGING
+  build-deploy-prod:
+    jobs:
+      - build
+      - zip-and-push-prod:
+          requires:
+            - build
+      - deploy-to-lambda-prod:
+          requires:
+            - zip-and-push-prod
+          filters:
+             branches:
+               only: main
+jobs:
+  zip-and-push-dev:
+    working_directory: ~/project
+    executor: aws-cli/default
+    steps:
+      - run:
+          name: 'Zip project and upload to S3 bucket'
+          command: |
+            sudo apt install zip -y
+            ls -lah
+            cd ~/project
+            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*'
+          environment:
+            ZIP_FILE_NAME: infra_notify_slack.zip
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID_DEV
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY_DEV
+          aws-region: AWS_DEFAULT_REGION
+          version: latest
+      - run:
+          name: 'Move zip file to S3 bucket'
+          command: |
+            aws configure list
+            aws s3 mv ${ZIP_FILE_NAME} ${AWS_S3_URL}
+          environment:
+            AWS_S3_URL: s3://lambda-functions/packages/
+            ZIP_FILE_NAME: notify_slack.zip
+  zip-and-push-stag:
+    working_directory: ~/project
+    executor: aws-cli/default
+    steps:
+      - run:
+          name: 'Zip project and upload to S3 bucket'
+          command: |
+            sudo apt install zip -y
+            ls -lah
+            cd ~/project
+            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*'
+          environment:
+            ZIP_FILE_NAME: notify_slack.zip
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID_STAG
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY_STAG
+          aws-region: AWS_DEFAULT_REGION
+          version: latest
+      - run:
+          name: 'Move zip file to S3 bucket'
+          command: |
+            aws configure list
+            aws s3 mv ${ZIP_FILE_NAME} ${AWS_S3_URL}
+          environment:
+            AWS_S3_URL: s3://lambda-functions-stag/packages/
+            ZIP_FILE_NAME: notify_slack.zip
+  zip-and-push-prod:
+    working_directory: ~/project
+    executor: aws-cli/default
+    steps:
+      - run:
+          name: 'Zip project and upload to S3 bucket'
+          command: |
+            sudo apt install zip -y
+            ls -lah
+            cd ~/project
+            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*'
+          environment:
+            ZIP_FILE_NAME: notify_slack.zip
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID_PROD
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY_PROD
+          aws-region: AWS_DEFAULT_REGION
+          version: latest
+      - run:
+          name: 'Move zip file to S3 bucket'
+          command: |
+            aws configure list
+            aws s3 mv ${ZIP_FILE_NAME} ${AWS_S3_URL}
+          environment:
+            AWS_S3_URL: s3://lambda-functions-prod/packages/
+            ZIP_FILE_NAME: notify_slack.zip
+  deploy-to-lambda-dev:
+    executor: aws-cli/default
+    steps:
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID_DEV
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY_DEV
+          aws-region: AWS_DEFAULT_REGION
+          version: latest
+      - run:
+          name: 'Deploy zip file to lambda'
+          command: |
+            aws configure list
+            aws lambda update-function-configuration \
+            --function-name ${FUNCTION_NAME} \
+            --environment Variables="{SLACK_CHANNEL=${SLACK_CHANNEL}, SLACK_ICON_EMOJI=${SLACK_ICON_EMOJI}, SLACK_USERNAME=${SLACK_USERNAME}, SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}}"
+            aws lambda update-function-code \
+            --function-name ${FUNCTION_NAME} \
+            --s3-bucket ${S3_BUCKET_DEV} \
+            --s3-key packages/${ZIP_FILE_NAME}
+          environment:
+            ZIP_FILE_NAME: notify_slack.zip
+  deploy-to-lambda-stag:
+    executor: aws-cli/default
+    steps:
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID_STAG
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY_STAG
+          aws-region: AWS_DEFAULT_REGION
+          version: latest
+      - run:
+          name: 'Deploy zip file to lambda'
+          command: |
+            aws configure list
+            aws lambda update-function-configuration \
+            --function-name ${FUNCTION_NAME} \
+            --environment Variables="{SLACK_CHANNEL=${SLACK_CHANNEL}, SLACK_ICON_EMOJI=${SLACK_ICON_EMOJI}, SLACK_USERNAME=${SLACK_USERNAME}, SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}}"
+            aws lambda update-function-code \
+            --function-name ${FUNCTION_NAME} \
+            --s3-bucket ${S3_BUCKET_STAG} \
+            --s3-key packages/${ZIP_FILE_NAME}
+          environment:
+            ZIP_FILE_NAME: infra_notify_slack.zip
+  deploy-to-lambda-prod:
+    executor: aws-cli/default
+    steps:
+      - aws-cli/setup:
+          aws-access-key-id: AWS_ACCESS_KEY_ID_PROD
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY_PROD
+          aws-region: AWS_DEFAULT_REGION
+          version: latest
+      - run:
+          name: 'Deploy zip file to lambda'
+          command: |
+            aws configure list
+            aws lambda update-function-configuration \
+            --function-name ${FUNCTION_NAME} \
+            --environment Variables="{SLACK_CHANNEL=${SLACK_CHANNEL}, SLACK_ICON_EMOJI=${SLACK_ICON_EMOJI}, SLACK_USERNAME=${SLACK_USERNAME}, SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}}"
+            aws lambda update-function-code \
+            --function-name ${FUNCTION_NAME} \
+            --s3-bucket ${S3_BUCKET_DEV} \
+            --s3-key packages/${ZIP_FILE_NAME}
+          environment:
+            ZIP_FILE_NAME: infra_notify_slack.zip
