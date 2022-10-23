@@ -9,6 +9,9 @@ workflows:
       - zip-and-push-dev:
           requires:
             - build
+          filters:
+             branches:
+               only: development
       - deploy-to-lambda-dev:
           requires:
             - zip-and-push-dev
@@ -22,19 +25,25 @@ workflows:
       - zip-and-push-stag:
           requires:
             - build
+          filters:
+             branches:
+               only: staging
       - deploy-to-lambda-stag:
           requires:
             - zip-and-push-stag
           filters:
              branches:
                only: staging
-  # STAGING
+  # PRODUCTION
   build-deploy-prod:
     jobs:
       - build
       - zip-and-push-prod:
           requires:
             - build
+          filters:
+             branches:
+               only: main
       - deploy-to-lambda-prod:
           requires:
             - zip-and-push-prod
@@ -42,19 +51,36 @@ workflows:
              branches:
                only: main
 jobs:
+  build:
+    working_directory: ~/project
+    docker:
+      - image: cimg/python:3.10.7
+    steps:
+      - checkout
+      - run:
+          name: Run some commands
+          command: |
+            python --version
+            ls -lah
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
   zip-and-push-dev:
     working_directory: ~/project
     executor: aws-cli/default
     steps:
+      - attach_workspace:
+          at: ~/project
       - run:
           name: 'Zip project and upload to S3 bucket'
           command: |
             sudo apt install zip -y
             ls -lah
             cd ~/project
-            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*'
+            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*' '*.g*' '*README*'
           environment:
-            ZIP_FILE_NAME: infra_notify_slack.zip
+            ZIP_FILE_NAME: notify_slack.zip
       - aws-cli/setup:
           aws-access-key-id: AWS_ACCESS_KEY_ID_DEV
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY_DEV
@@ -72,13 +98,15 @@ jobs:
     working_directory: ~/project
     executor: aws-cli/default
     steps:
+      - attach_workspace:
+          at: ~/project
       - run:
           name: 'Zip project and upload to S3 bucket'
           command: |
             sudo apt install zip -y
             ls -lah
             cd ~/project
-            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*'
+            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*' '*.g*' '*README*'
           environment:
             ZIP_FILE_NAME: notify_slack.zip
       - aws-cli/setup:
@@ -98,13 +126,15 @@ jobs:
     working_directory: ~/project
     executor: aws-cli/default
     steps:
+      - attach_workspace:
+          at: ~/project
       - run:
           name: 'Zip project and upload to S3 bucket'
           command: |
             sudo apt install zip -y
             ls -lah
             cd ~/project
-            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*'
+            zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*' '*.g*' '*README*'
           environment:
             ZIP_FILE_NAME: notify_slack.zip
       - aws-cli/setup:
@@ -161,7 +191,7 @@ jobs:
             --s3-bucket ${S3_BUCKET_STAG} \
             --s3-key packages/${ZIP_FILE_NAME}
           environment:
-            ZIP_FILE_NAME: infra_notify_slack.zip
+            ZIP_FILE_NAME: notify_slack.zip
   deploy-to-lambda-prod:
     executor: aws-cli/default
     steps:
@@ -182,4 +212,4 @@ jobs:
             --s3-bucket ${S3_BUCKET_PROD} \
             --s3-key packages/${ZIP_FILE_NAME}
           environment:
-            ZIP_FILE_NAME: infra_notify_slack.zip
+            ZIP_FILE_NAME: notify_slack.zip
