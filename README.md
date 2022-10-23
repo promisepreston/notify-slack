@@ -1,5 +1,7 @@
 # README.md
 
+**Note**: This is still a work in progress. Contributions are welcome.
+
 This is a Lambda function that receives messages from an SNS queue and sends it to a specified Slack Channel. It includes logic to transform your SNS topic's notification messages for the type of webhook endpoint that you're using and is compatible with the **Python 3.9** runtime.
 
 Slack Incoming Webhooks expect a JSON request with a message string corresponding to a "text" key. They also support message customization, such as adding a user name and icon, or overriding the webhook's default channel. For more information, see [Sending messages using incoming webhooks](https://aws.amazon.com/premiumsupport/knowledge-center/sns-lambda-webhooks-chime-slack-teams/#:~:text=Sending%20messages%20using%20incoming%20webhooks) on the Slack website.
