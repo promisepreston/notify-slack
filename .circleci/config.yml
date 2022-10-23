@@ -179,7 +179,7 @@ jobs:
             --environment Variables="{SLACK_CHANNEL=${SLACK_CHANNEL}, SLACK_ICON_EMOJI=${SLACK_ICON_EMOJI}, SLACK_USERNAME=${SLACK_USERNAME}, SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}}"
             aws lambda update-function-code \
             --function-name ${FUNCTION_NAME} \
-            --s3-bucket ${S3_BUCKET_DEV} \
+            --s3-bucket ${S3_BUCKET_PROD} \
             --s3-key packages/${ZIP_FILE_NAME}
           environment:
             ZIP_FILE_NAME: infra_notify_slack.zip
