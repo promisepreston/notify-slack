@@ -5,7 +5,10 @@ workflows:
   # DEVELOPMENT
   build-deploy-dev:
     jobs:
-      - build
+      - build:
+          filters:
+             branches:
+               only: development
       - zip-and-push-dev:
           requires:
             - build
@@ -21,7 +24,10 @@ workflows:
   # STAGING
   build-deploy-stag:
     jobs:
-      - build
+      - build:
+          filters:
+             branches:
+               only: staging
       - zip-and-push-stag:
           requires:
             - build
@@ -37,7 +43,10 @@ workflows:
   # PRODUCTION
   build-deploy-prod:
     jobs:
-      - build
+      - build:
+          filters:
+             branches:
+               only: main
       - zip-and-push-prod:
           requires:
             - build
@@ -132,6 +141,7 @@ jobs:
           name: 'Zip project and upload to S3 bucket'
           command: |
             sudo apt install zip -y
+            pip3 install requests
             ls -lah
             cd ~/project
             zip -vr ${ZIP_FILE_NAME} ./ -x '*.git*' '*.circle*' '*.g*' '*README*'
